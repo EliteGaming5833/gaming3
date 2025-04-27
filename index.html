@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PC-Konfigurator (Kompatibilitätsprüfung)</title>
+    <title>PC-Konfigurator (Dynamische Filterung)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .container { display: flex; flex-wrap: wrap; gap: 20px; }
@@ -13,46 +13,16 @@
         #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
         .compatible { background: #d4edda; color: #155724; }
         .incompatible { background: #f8d7da; color: #721c24; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <h1>PC-Konfigurator</h1>
+    <h1>PC-Konfigurator (CPU-zentriert)</h1>
     <div class="container">
-        <!-- Mainboard Auswahl -->
+        <!-- CPU Auswahl (Startpunkt) -->
         <div class="component-box">
-            <h3>Mainboard</h3>
-            <select id="mainboard">
-                <option value="">-- Wähle ein Mainboard --</option>
-                <!-- LGA1700 Mainboards -->
-                <optgroup label="Intel LGA1700 (DDR5)">
-                    <option value="asus_z790_hero">ASUS ROG Maximus Z790 Hero</option>
-                    <option value="msi_z790_meg">MSI MEG Z790</option>
-                    <option value="gigabyte_z790_xtreme">Gigabyte Z790 AORUS Xtreme</option>
-                    <option value="asus_b760_f">ASUS ROG Strix B760-F Gaming</option>
-                </optgroup>
-                <!-- LGA1851 Mainboards -->
-                <optgroup label="Intel LGA1851 (DDR5)">
-                    <option value="asus_z890_e">ASUS ROG Strix Z890-E Gaming</option>
-                    <option value="gigabyte_z890_eagle">GIGABYTE Z890 Eagle WIFI7</option>
-                </optgroup>
-                <!-- AM5 Mainboards -->
-                <optgroup label="AMD AM5 (DDR5)">
-                    <option value="asus_x670e_hero">ASUS ROG Crosshair X670E Hero</option>
-                    <option value="msi_x670e_carbon">MSI MPG X670E Carbon</option>
-                    <option value="asus_b650_plus">ASUS TUF Gaming B650-Plus</option>
-                </optgroup>
-                <!-- AM4 Mainboards -->
-                <optgroup label="AMD AM4 (DDR4)">
-                    <option value="asus_x570_dark">ASUS ROG Crosshair VIII Dark Hero</option>
-                    <option value="msi_b550_tomahawk">MSI B550 Tomahawk</option>
-                </optgroup>
-            </select>
-        </div>
-
-        <!-- CPU Auswahl -->
-        <div class="component-box">
-            <h3>CPU</h3>
-            <select id="cpu">
+            <h3>1. CPU wählen</h3>
+            <select id="cpu" onchange="filterMainboards()">
                 <option value="">-- Wähle eine CPU --</option>
                 <!-- Intel LGA1700 CPUs -->
                 <optgroup label="Intel LGA1700">
@@ -79,89 +49,135 @@
             </select>
         </div>
 
-        <!-- RAM Auswahl -->
-        <div class="component-box">
-            <h3>RAM</h3>
+        <!-- Mainboard Auswahl (wird dynamisch gefiltert) -->
+        <div class="component-box" id="mainboard-box" style="display: none;">
+            <h3>2. Mainboard wählen</h3>
+            <select id="mainboard" onchange="filterRam()">
+                <option value="">-- Wähle ein Mainboard --</option>
+                <!-- Wird via JavaScript gefüllt -->
+            </select>
+        </div>
+
+        <!-- RAM Auswahl (wird dynamisch gefiltert) -->
+        <div class="component-box" id="ram-box" style="display: none;">
+            <h3>3. RAM-Typ wählen</h3>
             <select id="ram">
                 <option value="">-- Wähle RAM-Typ --</option>
-                <option value="ddr4">DDR4</option>
-                <option value="ddr5">DDR5</option>
+                <!-- Wird via JavaScript gefüllt -->
             </select>
         </div>
     </div>
 
-    <button onclick="checkCompatibility()">Kompatibilität prüfen</button>
+    <button id="check-button" style="display: none;" onclick="checkCompatibility()">Kompatibilität prüfen</button>
     <div id="result"></div>
 
     <script>
-        // Kompatibilitätsdaten
-        const compatibilityData = {
-            mainboards: {
-                // LGA1700 (Intel)
-                asus_z790_hero: { socket: "LGA1700", ram: "ddr5" },
-                msi_z790_meg: { socket: "LGA1700", ram: "ddr5" },
-                gigabyte_z790_xtreme: { socket: "LGA1700", ram: "ddr5" },
-                asus_b760_f: { socket: "LGA1700", ram: "ddr5" },
-                // LGA1851 (Intel)
-                asus_z890_e: { socket: "LGA1851", ram: "ddr5" },
-                gigabyte_z890_eagle: { socket: "LGA1851", ram: "ddr5" },
-                // AM5 (AMD)
-                asus_x670e_hero: { socket: "AM5", ram: "ddr5" },
-                msi_x670e_carbon: { socket: "AM5", ram: "ddr5" },
-                asus_b650_plus: { socket: "AM5", ram: "ddr5" },
-                // AM4 (AMD)
-                asus_x570_dark: { socket: "AM4", ram: "ddr4" },
-                msi_b550_tomahawk: { socket: "AM4", ram: "ddr4" }
-            },
+        // Datenbank aller Komponenten
+        const components = {
             cpus: {
-                // Intel
-                i9_14900k: { socket: "LGA1700" },
-                i7_14700k: { socket: "LGA1700" },
-                i5_13600k: { socket: "LGA1700" },
-                ultra9_285k: { socket: "LGA1851" },
-                ultra7_265k: { socket: "LGA1851" },
-                // AMD
-                r9_7950x: { socket: "AM5" },
-                r7_7800x3d: { socket: "AM5" },
-                r5_7600x: { socket: "AM5" },
-                r9_5950x: { socket: "AM4" },
-                r7_5800x3d: { socket: "AM4" }
-            }
+                // Intel LGA1700
+                i9_14900k: { socket: "LGA1700", ram: "ddr5" },
+                i7_14700k: { socket: "LGA1700", ram: "ddr5" },
+                i5_13600k: { socket: "LGA1700", ram: "ddr5" },
+                // Intel LGA1851
+                ultra9_285k: { socket: "LGA1851", ram: "ddr5" },
+                ultra7_265k: { socket: "LGA1851", ram: "ddr5" },
+                // AMD AM5
+                r9_7950x: { socket: "AM5", ram: "ddr5" },
+                r7_7800x3d: { socket: "AM5", ram: "ddr5" },
+                r5_7600x: { socket: "AM5", ram: "ddr5" },
+                // AMD AM4
+                r9_5950x: { socket: "AM4", ram: "ddr4" },
+                r7_5800x3d: { socket: "AM4", ram: "ddr4" }
+            },
+            mainboards: [
+                // LGA1700 (Intel)
+                { id: "asus_z790_hero", name: "ASUS ROG Maximus Z790 Hero", socket: "LGA1700", ram: "ddr5" },
+                { id: "msi_z790_meg", name: "MSI MEG Z790", socket: "LGA1700", ram: "ddr5" },
+                { id: "gigabyte_z790_xtreme", name: "Gigabyte Z790 AORUS Xtreme", socket: "LGA1700", ram: "ddr5" },
+                { id: "asus_b760_f", name: "ASUS ROG Strix B760-F Gaming", socket: "LGA1700", ram: "ddr5" },
+                // LGA1851 (Intel)
+                { id: "asus_z890_e", name: "ASUS ROG Strix Z890-E Gaming", socket: "LGA1851", ram: "ddr5" },
+                { id: "gigabyte_z890_eagle", name: "GIGABYTE Z890 Eagle WIFI7", socket: "LGA1851", ram: "ddr5" },
+                // AM5 (AMD)
+                { id: "asus_x670e_hero", name: "ASUS ROG Crosshair X670E Hero", socket: "AM5", ram: "ddr5" },
+                { id: "msi_x670e_carbon", name: "MSI MPG X670E Carbon", socket: "AM5", ram: "ddr5" },
+                { id: "asus_b650_plus", name: "ASUS TUF Gaming B650-Plus", socket: "AM5", ram: "ddr5" },
+                // AM4 (AMD)
+                { id: "asus_x570_dark", name: "ASUS ROG Crosshair VIII Dark Hero", socket: "AM4", ram: "ddr4" },
+                { id: "msi_b550_tomahawk", name: "MSI B550 Tomahawk", socket: "AM4", ram: "ddr4" }
+            ]
         };
 
-        function checkCompatibility() {
-            const mainboardId = document.getElementById("mainboard").value;
+        // 1. Filtere Mainboards basierend auf CPU-Sockel
+        function filterMainboards() {
             const cpuId = document.getElementById("cpu").value;
+            if (!cpuId) return;
+
+            const cpu = components.cpus[cpuId];
+            const mainboardSelect = document.getElementById("mainboard");
+            mainboardSelect.innerHTML = '<option value="">-- Wähle ein Mainboard --</option>';
+
+            // Zeige nur Mainboards mit passendem Sockel an
+            components.mainboards.forEach(mb => {
+                if (mb.socket === cpu.socket) {
+                    const option = document.createElement("option");
+                    option.value = mb.id;
+                    option.textContent = mb.name;
+                    mainboardSelect.appendChild(option);
+                }
+            });
+
+            // Zeige Mainboard-Auswahl an
+            document.getElementById("mainboard-box").style.display = "block";
+            document.getElementById("ram-box").style.display = "none";
+            document.getElementById("check-button").style.display = "none";
+            document.getElementById("result").innerHTML = "";
+        }
+
+        // 2. Filtere RAM basierend auf Mainboard
+        function filterRam() {
+            const mainboardId = document.getElementById("mainboard").value;
+            if (!mainboardId) return;
+
+            const mainboard = components.mainboards.find(mb => mb.id === mainboardId);
+            const ramSelect = document.getElementById("ram");
+            ramSelect.innerHTML = '<option value="">-- Wähle RAM-Typ --</option>';
+
+            // Füge unterstützten RAM-Typ hinzu
+            const option = document.createElement("option");
+            option.value = mainboard.ram;
+            option.textContent = mainboard.ram.toUpperCase();
+            ramSelect.appendChild(option);
+
+            // Zeige RAM-Auswahl an
+            document.getElementById("ram-box").style.display = "block";
+            document.getElementById("check-button").style.display = "block";
+        }
+
+        // 3. Prüfe Kompatibilität (finale Validierung)
+        function checkCompatibility() {
+            const cpuId = document.getElementById("cpu").value;
+            const mainboardId = document.getElementById("mainboard").value;
             const ramType = document.getElementById("ram").value;
             const resultDiv = document.getElementById("result");
 
-            if (!mainboardId || !cpuId || !ramType) {
+            if (!cpuId || !mainboardId || !ramType) {
                 resultDiv.className = "incompatible";
                 resultDiv.innerHTML = "⚠ Bitte wähle alle Komponenten aus!";
                 return;
             }
 
-            const mainboard = compatibilityData.mainboards[mainboardId];
-            const cpu = compatibilityData.cpus[cpuId];
-            let issues = [];
+            const cpu = components.cpus[cpuId];
+            const mainboard = components.mainboards.find(mb => mb.id === mainboardId);
 
-            // 1. Sockel-Kompatibilität prüfen
-            if (mainboard.socket !== cpu.socket) {
-                issues.push(`🚫 <strong>Sockel-Konflikt</strong>: Mainboard (${mainboard.socket}) ist nicht kompatibel mit CPU (${cpu.socket})`);
-            }
-
-            // 2. RAM-Kompatibilität prüfen
-            if (mainboard.ram !== ramType) {
-                issues.push(`🚫 <strong>RAM-Typ</strong>: Mainboard unterstützt nur ${mainboard.ram.toUpperCase()}, aber ausgewählt ist ${ramType.toUpperCase()}`);
-            }
-
-            // Ergebnis anzeigen
-            if (issues.length === 0) {
+            // Alles sollte bereits durch die Filterung kompatibel sein, aber zur Sicherheit:
+            if (cpu.socket === mainboard.socket && mainboard.ram === ramType) {
                 resultDiv.className = "compatible";
-                resultDiv.innerHTML = "✅ <strong>Kompatibel!</strong> Alle Komponenten passen zusammen.";
+                resultDiv.innerHTML = "✅ <strong>Kompatibel!</strong> Alle Komponenten passen perfekt zusammen.";
             } else {
                 resultDiv.className = "incompatible";
-                resultDiv.innerHTML = `<strong>⚠ Kompatibilitätsprobleme:</strong><br>${issues.join("<br>")}`;
+                resultDiv.innerHTML = "🚫 <strong>Fehler!</strong> Die Filterung hat versagt (bitte melden!).";
             }
         }
     </script>
