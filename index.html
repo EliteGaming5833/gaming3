@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC-Konfigurator (Kompatibilitätsprüfung)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .component-box { border: 1px solid #ddd; padding: 15px; border-radius: 5px; width: 300px; }
+        select { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { background: #0078d7; color: white; border: none; padding: 10px 15px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .compatible { background: #d4edda; color: #155724; }
+        .incompatible { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>PC-Konfigurator</h1>
+    <div class="container">
+        <!-- Mainboard Auswahl -->
+        <div class="component-box">
+            <h3>Mainboard</h3>
+            <select id="mainboard">
+                <option value="">-- Wähle ein Mainboard --</option>
+                <!-- LGA1700 Mainboards -->
+                <optgroup label="Intel LGA1700 (DDR5)">
+                    <option value="asus_z790_hero">ASUS ROG Maximus Z790 Hero</option>
+                    <option value="msi_z790_meg">MSI MEG Z790</option>
+                    <option value="gigabyte_z790_xtreme">Gigabyte Z790 AORUS Xtreme</option>
+                    <option value="asus_b760_f">ASUS ROG Strix B760-F Gaming</option>
+                </optgroup>
+                <!-- LGA1851 Mainboards -->
+                <optgroup label="Intel LGA1851 (DDR5)">
+                    <option value="asus_z890_e">ASUS ROG Strix Z890-E Gaming</option>
+                    <option value="gigabyte_z890_eagle">GIGABYTE Z890 Eagle WIFI7</option>
+                </optgroup>
+                <!-- AM5 Mainboards -->
+                <optgroup label="AMD AM5 (DDR5)">
+                    <option value="asus_x670e_hero">ASUS ROG Crosshair X670E Hero</option>
+                    <option value="msi_x670e_carbon">MSI MPG X670E Carbon</option>
+                    <option value="asus_b650_plus">ASUS TUF Gaming B650-Plus</option>
+                </optgroup>
+                <!-- AM4 Mainboards -->
+                <optgroup label="AMD AM4 (DDR4)">
+                    <option value="asus_x570_dark">ASUS ROG Crosshair VIII Dark Hero</option>
+                    <option value="msi_b550_tomahawk">MSI B550 Tomahawk</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <!-- CPU Auswahl -->
+        <div class="component-box">
+            <h3>CPU</h3>
+            <select id="cpu">
+                <option value="">-- Wähle eine CPU --</option>
+                <!-- Intel LGA1700 CPUs -->
+                <optgroup label="Intel LGA1700">
+                    <option value="i9_14900k">Intel Core i9-14900K</option>
+                    <option value="i7_14700k">Intel Core i7-14700K</option>
+                    <option value="i5_13600k">Intel Core i5-13600K</option>
+                </optgroup>
+                <!-- Intel LGA1851 CPUs -->
+                <optgroup label="Intel LGA1851">
+                    <option value="ultra9_285k">Intel Core Ultra 9 285K</option>
+                    <option value="ultra7_265k">Intel Core Ultra 7 265K</option>
+                </optgroup>
+                <!-- AMD AM5 CPUs -->
+                <optgroup label="AMD AM5">
+                    <option value="r9_7950x">AMD Ryzen 9 7950X</option>
+                    <option value="r7_7800x3d">AMD Ryzen 7 7800X3D</option>
+                    <option value="r5_7600x">AMD Ryzen 5 7600X</option>
+                </optgroup>
+                <!-- AMD AM4 CPUs -->
+                <optgroup label="AMD AM4">
+                    <option value="r9_5950x">AMD Ryzen 9 5950X</option>
+                    <option value="r7_5800x3d">AMD Ryzen 7 5800X3D</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <!-- RAM Auswahl -->
+        <div class="component-box">
+            <h3>RAM</h3>
+            <select id="ram">
+                <option value="">-- Wähle RAM-Typ --</option>
+                <option value="ddr4">DDR4</option>
+                <option value="ddr5">DDR5</option>
+            </select>
+        </div>
+    </div>
+
+    <button onclick="checkCompatibility()">Kompatibilität prüfen</button>
+    <div id="result"></div>
+
+    <script>
+        // Kompatibilitätsdaten
+        const compatibilityData = {
+            mainboards: {
+                // LGA1700 (Intel)
+                asus_z790_hero: { socket: "LGA1700", ram: "ddr5" },
+                msi_z790_meg: { socket: "LGA1700", ram: "ddr5" },
+                gigabyte_z790_xtreme: { socket: "LGA1700", ram: "ddr5" },
+                asus_b760_f: { socket: "LGA1700", ram: "ddr5" },
+                // LGA1851 (Intel)
+                asus_z890_e: { socket: "LGA1851", ram: "ddr5" },
+                gigabyte_z890_eagle: { socket: "LGA1851", ram: "ddr5" },
+                // AM5 (AMD)
+                asus_x670e_hero: { socket: "AM5", ram: "ddr5" },
+                msi_x670e_carbon: { socket: "AM5", ram: "ddr5" },
+                asus_b650_plus: { socket: "AM5", ram: "ddr5" },
+                // AM4 (AMD)
+                asus_x570_dark: { socket: "AM4", ram: "ddr4" },
+                msi_b550_tomahawk: { socket: "AM4", ram: "ddr4" }
+            },
+            cpus: {
+                // Intel
+                i9_14900k: { socket: "LGA1700" },
+                i7_14700k: { socket: "LGA1700" },
+                i5_13600k: { socket: "LGA1700" },
+                ultra9_285k: { socket: "LGA1851" },
+                ultra7_265k: { socket: "LGA1851" },
+                // AMD
+                r9_7950x: { socket: "AM5" },
+                r7_7800x3d: { socket: "AM5" },
+                r5_7600x: { socket: "AM5" },
+                r9_5950x: { socket: "AM4" },
+                r7_5800x3d: { socket: "AM4" }
+            }
+        };
+
+        function checkCompatibility() {
+            const mainboardId = document.getElementById("mainboard").value;
+            const cpuId = document.getElementById("cpu").value;
+            const ramType = document.getElementById("ram").value;
+            const resultDiv = document.getElementById("result");
+
+            if (!mainboardId || !cpuId || !ramType) {
+                resultDiv.className = "incompatible";
+                resultDiv.innerHTML = "⚠ Bitte wähle alle Komponenten aus!";
+                return;
+            }
+
+            const mainboard = compatibilityData.mainboards[mainboardId];
+            const cpu = compatibilityData.cpus[cpuId];
+            let issues = [];
+
+            // 1. Sockel-Kompatibilität prüfen
+            if (mainboard.socket !== cpu.socket) {
+                issues.push(`🚫 <strong>Sockel-Konflikt</strong>: Mainboard (${mainboard.socket}) ist nicht kompatibel mit CPU (${cpu.socket})`);
+            }
+
+            // 2. RAM-Kompatibilität prüfen
+            if (mainboard.ram !== ramType) {
+                issues.push(`🚫 <strong>RAM-Typ</strong>: Mainboard unterstützt nur ${mainboard.ram.toUpperCase()}, aber ausgewählt ist ${ramType.toUpperCase()}`);
+            }
+
+            // Ergebnis anzeigen
+            if (issues.length === 0) {
+                resultDiv.className = "compatible";
+                resultDiv.innerHTML = "✅ <strong>Kompatibel!</strong> Alle Komponenten passen zusammen.";
+            } else {
+                resultDiv.className = "incompatible";
+                resultDiv.innerHTML = `<strong>⚠ Kompatibilitätsprobleme:</strong><br>${issues.join("<br>")}`;
+            }
+        }
+    </script>
+</body>
+</html>
